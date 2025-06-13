@@ -1,0 +1,157 @@
+
+* function normalizeBitString
+
+Removes leading zeros from a bit string (except keeps at least one
+digit), ensuring the result is a valid bit string with the same
+integer value (if the original bitstring was also valid).
+
+#+begin_src dafny
+method normalizeBitString(s: string) returns(t: string)
+ ensures ValidBitString(t)
+ ensures |t| > 0
+ ensures |t| > 1 ==> t[0] != '0'
+ ensures ValidBitString(s) ==> Str2Int(s) == Str2Int(t)
+#+end_src
+
+** full description
+
+The normalizeBitString function performs canonical normalization on
+bit string representations of big integers. It takes a string
+parameter that may contain leading zeros and returns a normalized
+version that represents the same integer value while conforming to
+standard bit string formatting.
+
+The function maintains correctness through formal preconditions and
+postconditions:
+
+- Postconditions guarantee the result is a valid bit string with at
+  least one digit, no leading zeros (unless the string represents
+  zero), and equivalent integer value to the input (when the input is
+  valid)
+
+The normalization process removes unnecessary leading zeros while
+preserving the mathematical value, ensuring consistent representation
+of integers. This is essential for:
+
+- Canonical comparison operations between bit strings
+- Efficient storage by eliminating redundant leading zeros  
+- Maintaining deterministic output format for arithmetic operations
+- Ensuring bit string representations follow standard conventions
+
+This specification enables verification of normalization operations in
+big integer libraries, making it suitable for cryptographic
+applications, arbitrary precision arithmetic systems, and other
+domains requiring consistent canonical representation of large
+numbers.
+
+* function add
+
+If the input is valid, then the output is valid and the output string
+interpreted as an integer equals the sum of the input strings
+interpreted as integers.
+
+#+begin_src dafny
+method Add(s1: string, s2: string) returns (res: string)
+ requires ValidBitString(s1) && ValidBitString(s2)
+ ensures ValidBitString(res)
+ ensures Str2Int(res) == Str2Int(s1) + Str2Int(s2)
+#+end_src
+
+** full description
+
+The Add function performs arithmetic addition on two big integers
+represented as bit strings. It takes two string parameters (s1 and s2)
+that must be valid bit string representations of integers, and returns
+their sum as another valid bit string.
+
+The function maintains correctness through formal preconditions and
+postconditions:
+
+- Preconditions ensure both input strings are valid bit representations
+
+- Postconditions guarantee the result is also a valid bit string and
+  that when interpreted as an integer, it equals the mathematical sum
+  of the input integers
+
+This specification enables verification of big integer addition
+operations where the integers may exceed the capacity of standard
+integer types, making it suitable for cryptographic applications,
+arbitrary precision arithmetic, and other domains requiring large
+number computations.
+
+* function mul
+
+If the input is valid, then the output is valid and the output string
+interpreted as an integer equals the product of the input strings
+interpreted as integers.
+
+#+begin_src dafny
+method Mul(s1: string, s2: string) returns (res: string)
+ requires ValidBitString(s1) && ValidBitString(s2)
+ ensures ValidBitString(res)
+ ensures Str2Int(res) == Str2Int(s1) * Str2Int(s2)
+#+end_src
+
+** full description
+
+The Mul function performs arithmetic multiplication on two big
+integers represented as bit strings. It takes two string parameters
+(s1 and s2) that must be valid bit string representations of integers,
+and returns their product as another valid bit string.
+
+The function maintains correctness through formal preconditions and
+postconditions:
+
+- Preconditions ensure both input strings are valid bit
+  representations
+
+- Postconditions guarantee the result is also a valid bit string and
+  that when interpreted as an integer, it equals the mathematical
+  product of the input integers
+
+This specification enables verification of big integer multiplication
+operations where the integers may exceed the capacity of standard
+integer types. The multiplication algorithm must handle arbitrary
+precision arithmetic efficiently, making it suitable for cryptographic
+applications, RSA operations, and other domains requiring large number
+computations where multiplication performance is critical.
+
+* function sub
+
+If the inputs are valid and the first string is greater than or equal
+to the second (when interpreted as integers), then the output is valid
+and equals the difference between the first and second strings (as
+integers)
+
+#+begin_src dafny
+method Sub(s1: string, s2: string) returns (res: string)
+ requires ValidBitString(s1) && ValidBitString(s2)
+ requires Str2Int(s1) >= Str2Int(s2)
+ ensures ValidBitString(res)
+ ensures Str2Int(res) == Str2Int(s1) - Str2Int(s2)" 
+#+end_src
+
+** full description
+
+The Sub function performs arithmetic subtraction on two big integers
+represented as bit strings. It takes two string parameters (s1 and s2)
+that must be valid bit string representations of integers, and returns
+their difference as another valid bit string.
+
+The function maintains correctness through formal preconditions and
+postconditions:
+
+- Preconditions ensure both input strings are valid bit
+  representations and that s1 ≥ s2 (to avoid negative results)
+- Postconditions guarantee the result is also a valid bit string and
+  that when interpreted as an integer, it equals the mathematical
+  difference of the input integers
+
+This specification enables verification of big integer subtraction
+operations where the integers may exceed the capacity of standard
+integer types. The subtraction algorithm must handle arbitrary
+precision arithmetic efficiently while ensuring non-negative results,
+making it suitable for cryptographic applications, modular arithmetic,
+and other domains requiring large number computations where
+subtraction operations are constrained to non-negative results.
+
