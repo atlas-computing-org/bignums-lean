@@ -1,5 +1,6 @@
+#+title: bignums implementation
 
-* function allZero
+* predicate allZero
 
 Predicate that checks if a string is empty or consists only of =0=
 characters.
@@ -47,7 +48,7 @@ The function maintains correctness through formal postconditions:
 - Confirms the string evaluates to the integer value 0 when interpreted
 - Verifies the result satisfies the allZero predicate
 
-* function validBitString
+* predicate validBitString
 
 Predicate that checks if a string consists only of =0= and =1=
 characters.
@@ -231,6 +232,43 @@ making it suitable for cryptographic applications, modular arithmetic,
 and other domains requiring large number computations where
 subtraction operations are constrained to non-negative results.
 
+* function DivMod
+
+Performs division on bit strings, returning both quotient and
+remainder as valid bit strings. The input divisor (as an integer) must
+be nonzero
+
+#+begin_src dafny
+method DivMod(dividend: string, divisor: string) returns (quotient: string, remainder: string)
+ requires ValidBitString(dividend) && ValidBitString(divisor)
+ requires Str2Int(divisor) > 0
+ ensures ValidBitString(quotient) && ValidBitString(remainder)
+ ensures Str2Int(quotient) == Str2Int(dividend) / Str2Int(divisor)
+ ensures Str2Int(remainder) == Str2Int(dividend) % Str2Int(divisor)
+#+end_src
+
+** auto-informalized
+
+The DivMod function performs integer division on two big integers
+represented as bit strings, simultaneously computing both the quotient
+and remainder. It takes two string parameters (dividend and divisor)
+that must be valid bit string representations, and returns two
+results: the quotient and remainder as separate valid bit strings.
+
+The function maintains correctness through formal preconditions and
+postconditions:
+
+- Preconditions ensure both input strings are valid bit
+  representations and that the divisor represents a positive integer
+  (preventing division by zero)
+
+- Postconditions guarantee both results are valid bit strings, with
+  the quotient representing the integer division result and the
+  remainder representing the modulo operation result
+
+This specification enables verification of big integer division
+operations where the integers may exceed standard integer type
+capacities.
 
 * function compare
 
@@ -300,4 +338,68 @@ proving that leading zeros can be removed without affecting the
 represented integer value, which is essential for canonical
 representation and efficient comparison operations in big integer
 arithmetic.
+
+* lemma TrailingZeros
+
+Shows that trailing zeros in a bit string multiply its value by powers
+of 2.
+
+#+begin_src dafny
+lemma TrailingZeros(s: string, numZeros: nat)
+ requires ValidBitString(s)
+ requires numZeros <= |s|
+ requires forall i :: |s| - numZeros <= i < |s| ==> s[i] == '0'
+ ensures Str2Int(s) == Str2Int(s[..|s|-numZeros]) * Pow2(numZeros)
+#+end_src
+
+** auto-informalized
+
+The TrailingZeros lemma establishes that trailing zeros in a valid bit
+string correspond to multiplication by powers of 2.
+
+The lemma takes two parameters: a string `s` and a natural number
+`numZeros`. It requires that `s` is a valid bit string, that
+`numZeros` is at most the length of `s`, and that all characters at
+the last `numZeros` positions (from position `|s| - numZeros` to
+`|s| - 1`) are '0' characters.
+
+Under these conditions, the lemma guarantees that the integer value of
+the original string `s` equals the integer value of the prefix
+substring (excluding the trailing zeros) multiplied by 2 raised to the
+power of `numZeros`. Specifically, `Str2Int(s) ==
+Str2Int(s[..|s|-numZeros]) * Pow2(numZeros)`.
+
+This fundamental property captures the mathematical effect of trailing
+zeros in binary representation: each trailing zero effectively shifts
+the bit pattern left by one position, which corresponds to
+multiplication by 2. Multiple trailing zeros result in multiplication
+by successive powers of 2, enabling efficient representation and
+manipulation of numbers that are multiples of powers of 2 in big
+integer arithmetic systems.
+
+* lemma Eleven
+
+Proves that the bit string 1011 represents the decimal value 11.
+
+#+begin_src dafyn
+lemma Eleven()
+  ensures Str2Int("1011") == 11
+#+end_src
+
+** auto-informalized
+
+The Eleven lemma demonstrates the correctness of binary-to-decimal
+conversion for a specific example. It establishes that the bit string
+"1011" correctly evaluates to the decimal value 11.
+
+This lemma serves as a concrete verification example showing how the
+Str2Int function performs binary interpretation. The bit string "1011"
+represents:
+
+- Position 0 (rightmost): 1 × 2⁰ = 1 × 1 = 1
+- Position 1: 1 × 2¹ = 1 × 2 = 2  
+- Position 2: 0 × 2² = 0 × 4 = 0
+- Position 3 (leftmost): 1 × 2³ = 1 × 8 = 8
+
+Summing these positional values: 8 + 0 + 2 + 1 = 11.
 

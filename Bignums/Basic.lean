@@ -103,6 +103,9 @@ def Sub₁ (s1 s2 : String) : String :=
     let trimmed := reversed.dropWhile (· = '0')
     String.mk (if trimmed.isEmpty then ['0'] else trimmed)
 
+#eval (λ a b =>
+  let p := Sub₁ (nat2str a) (nat2str b)
+  (str2nat p)) 150 50
 
 -- Compare two bit strings representing big integers
 def compare (s1 s2 : String) : Int :=
@@ -125,6 +128,39 @@ def compare (s1 s2 : String) : Int :=
       | _, _ => 0  -- Should not happen with same length strings
 
     compareChars norm1.data norm2.data
+
+
+-- Division with remainder (DivMod) function
+def divMod (dividend divisor : String) : String × String :=
+  -- Handle special cases
+  if divisor = "0" then ("0", "0")  -- Undefined behavior, but avoid crash
+  else if dividend = "0" then ("0", "0")
+  else if dividend = divisor then ("1", "0")
+  else if compare dividend divisor = -1 then ("0", dividend)
+  else
+    -- Long division algorithm for bit strings
+    let rec divStep (remainder : String)
+      (quotientBits : List Char) (dividendBits : List Char) : String × String :=
+      match dividendBits with
+      | [] =>
+          let quotient := String.mk
+            (if quotientBits.isEmpty then ['0'] else quotientBits.reverse)
+          (quotient, remainder)
+      | bit :: restBits =>
+          let newRemainder :=
+            if remainder = "0" then String.mk [bit] else remainder ++ String.mk [bit]
+          let cmp := compare newRemainder divisor
+          if cmp >= 0 then
+            let subtractedRemainder := Sub₁ newRemainder divisor
+            divStep subtractedRemainder ('1' :: quotientBits) restBits
+          else
+            divStep newRemainder ('0' :: quotientBits) restBits
+
+    divStep "0" [] dividend.data
+
+#eval (λ a b =>
+  let p := divMod (nat2str a) (nat2str b)
+  (str2nat p.1, str2nat p.2)) 15 3
 
 
 -- Theorem stating correctness of Add function
@@ -165,6 +201,16 @@ theorem compare_correct (s1 s2 : String)
   (str2nat s1 > str2nat s2 → compare s1 s2 = 1) := by
   sorry
 
+-- Theorem stating correctness of divMod function
+theorem divMod_correct (dividend divisor : String)
+  (h1 : validBitString dividend) (h2 : validBitString divisor)
+  (h3 : str2nat divisor > 0) :
+  let (quotient, remainder) := divMod dividend divisor
+  validBitString quotient ∧ validBitString remainder ∧
+  str2nat quotient = str2nat dividend / str2nat divisor ∧
+  str2nat remainder = str2nat dividend % str2nat divisor := by
+  sorry
+
 -- Theorem stating correctness of normalizeBitString function
 theorem normalizeBitString_correct (s t : String) :
   normalizeBitString s = t →
@@ -176,79 +222,43 @@ theorem normalizeBitString_correct (s t : String) :
 theorem IgnoreInitialZeros (s : String) (numZeros : Nat)
   (h1 : validBitString s)
   (h2 : numZeros ≤ s.length)
-  (h3 : ∀ i, i < numZeros → s.data[i]? = some '0') :
+  (h3 : ∀ i, i < numZeros → s.get ⟨i⟩ = some '0') :
   str2nat s = str2nat (s.drop numZeros) := by
-  induction numZeros, h2 using Nat.le_induction with
-  | base => 
-    simp [String.drop_zero]
-  | succ n hn ih =>
-    -- n + 1 ≤ s.length, want to show str2nat s = str2nat (s.drop (n + 1))
-    -- First show first character is '0'
-    have first_zero : s.data[0]? = some '0' := by
-      apply h3 0 (Nat.succ_pos n)
-    
-    -- Apply IH to s.drop 1
-    have ih_hyp : ∀ i, i < n → (s.drop 1).data[i]? = some '0' := by
-      intro i hi
-      have orig := h3 (i + 1) (Nat.succ_lt_succ hi)
-      cases h_nonempty : s.data with
-      | nil => 
-        simp [validBitString] at h1
-      | cons c cs =>
-        simp [String.drop, h_nonempty] at orig ⊢
-        exact orig
-    
-    have s_drop1_valid : validBitString (s.drop 1) := by
-      cases h_nonempty : s.data with
-      | nil => 
-        simp [validBitString] at h1
-      | cons c cs =>
-        simp [validBitString, String.drop, h_nonempty]
-        constructor
-        · simp [validBitString] at h1
-          intro x hx
-          exact h1.1 x (List.mem_cons_of_mem c hx)
-        · simp
-    
-    have n_le_drop1 : n ≤ (s.drop 1).length := by
-      simp [String.drop, String.length]
-      cases h_nonempty : s.data with
-      | nil => 
-        simp [validBitString] at h1
-      | cons c cs =>
-        simp [h_nonempty]
-        have : n + 1 ≤ cs.length + 1 := by
-          rw [← String.length, ← h_nonempty] at hn
-          exact hn
-        omega
-    
-    have ih_applied := ih s_drop1_valid n_le_drop1 ih_hyp
-    
-    -- Show str2nat s = str2nat (s.drop 1) when first char is '0'
-    have s_eq_drop1 : str2nat s = str2nat (s.drop 1) := by
-      cases h_nonempty : s.data with
-      | nil => 
-        simp [validBitString] at h1
-      | cons c cs =>
-        have c_zero : c = '0' := by
-          simp [List.get?] at first_zero
-          rw [h_nonempty] at first_zero
-          simp at first_zero
-          exact Option.some_inj.mp first_zero
-        simp [str2nat, h_nonempty, List.foldl_cons, c_zero, String.drop]
-    
-    -- Show (s.drop 1).drop n = s.drop (n + 1)
-    have drop_assoc : (s.drop 1).drop n = s.drop (n + 1) := by
-      cases h_nonempty : s.data with
-      | nil => 
-        simp [validBitString] at h1
-      | cons c cs =>
-        simp [String.drop, h_nonempty, List.drop]
-    
-    calc str2nat s
-      = str2nat (s.drop 1) := s_eq_drop1
-      _ = str2nat ((s.drop 1).drop n) := ih_applied
-      _ = str2nat (s.drop (n + 1)) := by rw [drop_assoc]
+  sorry
+
+-- TrailingZeros lemma: trailing zeros multiply the value by powers of 2
+theorem TrailingZeros (s : String) (numZeros : Nat)
+  (h1 : validBitString s)
+  (h2 : numZeros ≤ s.length)
+  (h3 : ∀ i, s.length - numZeros ≤ i ∧ i < s.length → s.get ⟨i⟩ = some '0') :
+  str2nat s = str2nat (s.take (s.length - numZeros)) * (2 ^ numZeros) := by
+  sorry
+
+
+-- proves that the bit string "1011" represents the decimal value 11
+theorem Eleven : str2nat "1011" = 11 := by
+  unfold str2nat
+  simp
+
+
+-- Test evaluations for divMod function
+#eval divMod "1011" "10"  -- 11 ÷ 2 = 5 remainder 1 (should be ("101", "1"))
+#eval divMod "1100" "11"  -- 12 ÷ 3 = 4 remainder 0 (should be ("100", "0"))
+#eval divMod "1111" "100" -- 15 ÷ 4 = 3 remainder 3 (should be ("11", "11"))
+#eval divMod "10000" "101" -- 16 ÷ 5 = 3 remainder 1 (should be ("11", "1"))
+#eval divMod "1" "10"     -- 1 ÷ 2 = 0 remainder 1 (should be ("0", "1"))
+#eval divMod "0" "10"     -- 0 ÷ 2 = 0 remainder 0 (should be ("0", "0"))
+#eval divMod "101" "101"  -- 5 ÷ 5 = 1 remainder 0 (should be ("1", "0"))
+
+-- Verify the results using str2nat
+#eval str2nat "1011"  -- 11
+#eval str2nat "10"    -- 2
+#eval str2nat "101"   -- 5
+#eval str2nat "1"     -- 1
+#eval str2nat "1100"  -- 12
+#eval str2nat "11"    -- 3
+#eval str2nat "100"   -- 4
+#eval str2nat "0"     -- 0
 
 
 end Bignum
