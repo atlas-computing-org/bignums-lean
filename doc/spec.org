@@ -9,7 +9,7 @@ characters.
 predicate allZero(s: string)  
 #+end_src
 
-** full description
+** auto-informalized
 
 The allZero predicate is a fundamental validation function that
 determines whether a string represents the mathematical value zero in
@@ -34,7 +34,7 @@ method zeros(n: nat) returns (s: string)
  ensures AllZero(s)
 #+end_src
 
-** full description
+** auto-informalized
 
 The zeros function is a constructor that creates bit string
 representations of the mathematical value zero with a specified
@@ -57,10 +57,10 @@ characters.
 predicate validBitString(s: string)
 #+end_src
 
-** full description
+** auto-informalized
 
-The validBitString predicate is a fundamental validation function that
-determines whether a string represents a well-formed bit string
+The =validBitString= predicate is a fundamental validation function
+that determines whether a string represents a well-formed bit string
 suitable for big integer arithmetic operations. It accepts a string
 parameter and returns true if the string contains only valid binary
 digits ('0' and '1' characters) and is non-empty.
@@ -90,7 +90,7 @@ method normalizeBitString(s: string) returns(t: string)
  ensures ValidBitString(s) ==> Str2Int(s) == Str2Int(t)
 #+end_src
 
-** full description
+** auto-informalized
 
 The normalizeBitString function performs canonical normalization on
 bit string representations of big integers. It takes a string
@@ -134,7 +134,7 @@ method Add(s1: string, s2: string) returns (res: string)
  ensures Str2Int(res) == Str2Int(s1) + Str2Int(s2)
 #+end_src
 
-** full description
+** auto-informalized
 
 The Add function performs arithmetic addition on two big integers
 represented as bit strings. It takes two string parameters (s1 and s2)
@@ -169,7 +169,7 @@ method Mul(s1: string, s2: string) returns (res: string)
  ensures Str2Int(res) == Str2Int(s1) * Str2Int(s2)
 #+end_src
 
-** full description
+** auto-informalized
 
 The Mul function performs arithmetic multiplication on two big
 integers represented as bit strings. It takes two string parameters
@@ -208,7 +208,7 @@ method Sub(s1: string, s2: string) returns (res: string)
  ensures Str2Int(res) == Str2Int(s1) - Str2Int(s2)" 
 #+end_src
 
-** full description
+** auto-informalized
 
 The Sub function performs arithmetic subtraction on two big integers
 represented as bit strings. It takes two string parameters (s1 and s2)
@@ -232,7 +232,7 @@ making it suitable for cryptographic applications, modular arithmetic,
 and other domains requiring large number computations where
 subtraction operations are constrained to non-negative results.
 
-* function DivMod
+* function div
 
 Performs division on bit strings, returning both quotient and
 remainder as valid bit strings. The input divisor (as an integer) must
@@ -249,7 +249,7 @@ method DivMod(dividend: string, divisor: string) returns (quotient: string, rema
 
 ** auto-informalized
 
-The DivMod function performs integer division on two big integers
+The =div= function performs integer division on two big integers
 represented as bit strings, simultaneously computing both the quotient
 and remainder. It takes two string parameters (dividend and divisor)
 that must be valid bit string representations, and returns two
@@ -269,6 +269,39 @@ postconditions:
 This specification enables verification of big integer division
 operations where the integers may exceed standard integer type
 capacities.
+
+* function ModExp
+
+Computes modular exponentiation (sx^sy mod sz) for bit strings. The
+inputs must be valid, and the output will be valid. The modulus must
+be at least 2.
+
+#+begin_src dafny
+method ModExp(sx: string, sy: string, sz: string) returns (res: string)
+ requires ValidBitString(sx) && ValidBitString(sy) && ValidBitString(sz)
+ ensures ValidBitString(res)
+ ensures Str2Int(res) == Exp_int(Str2Int(sx), Str2Int(sy)) % Str2Int(sz)
+ requires |sy| > 0 && Str2Int(sz) > 1
+#+end_src
+
+** auto-informalized
+
+The ModExp function performs modular exponentiation on three big
+integers represented as bit strings, computing sx^sy mod sz. It takes
+three string parameters (sx, sy, sz) that must be valid bit string
+representations, and returns the result as another valid bit string.
+
+The function maintains correctness through formal preconditions and
+postconditions:
+
+- Preconditions ensure all three input strings are valid bit
+  representations, that the exponent sy is non-empty, and that the
+  modulus sz represents an integer greater than 1 (preventing division
+  by zero or one in modular arithmetic)
+
+- Postconditions guarantee the result is a valid bit string that
+  represents the mathematical value of sx raised to the power sy,
+  modulo sz
 
 * function compare
 
@@ -402,4 +435,11 @@ represents:
 - Position 3 (leftmost): 1 × 2³ = 1 × 8 = 8
 
 Summing these positional values: 8 + 0 + 2 + 1 = 11.
+* comments
 
+- =divMod= was renamed to =div= since the spec says nothing about the
+  result being module something.
+
+- In the specification and Dafny, an empty string is a
+  =validBitString= but a =normalizedBitString= is a =validBitString=
+  with no leading zeros and no empty.

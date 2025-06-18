@@ -13,6 +13,9 @@ autoImplicit = false
 name = "mathlib"
 scope = "leanprover-community"
 
+[[require]]
+name = "plausible"
+scope = "leanprover-community"
 
 [[lean_exe]]
 name = "bignums"
