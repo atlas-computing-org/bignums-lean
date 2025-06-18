@@ -56,7 +56,8 @@ def add (s1 s2 : String) : String :=
         let sum := (if c = '1' then 1 else 0) + (if carry then 1 else 0)
         (if sum % 2 = 1 then '1' else '0') :: addBits cs [] (sum ≥ 2)
     | c1 :: cs1, c2 :: cs2 =>
-        let sum := (if c1 = '1' then 1 else 0) + (if c2 = '1' then 1 else 0) + (if carry then 1 else 0)
+        let sum := (if c1 = '1' then 1 else 0)
+          + (if c2 = '1' then 1 else 0) + (if carry then 1 else 0)
         (if sum % 2 = 1 then '1' else '0') :: addBits cs1 cs2 (sum ≥ 2)
 
   let result := addBits s1.data.reverse s2.data.reverse false
@@ -246,10 +247,12 @@ theorem div_correct (dividend divisor : String)
   sorry
 
 -- Theorem stating correctness of normalizeBitString function
-theorem normalizeBitString_correct (s t : String) :
+theorem normalizeBitString_correct (s t : String)
+  (h1 : validBitString s) :
   normalizeBitString s = t →
-  validBitString t ∧ t.length > 0 ∧ (t.length > 1 → t.get 0 ≠ '0')
-  ∧ (validBitString s → str2nat t = str2nat s) := by
+  validBitString t
+  ∧ t.length > 0 ∧ (t.length > 1 → t.get 0 ≠ '0')
+  ∧ str2nat t = str2nat s := by
   sorry
 
 -- Theorem stating correctness of modExp function

@@ -443,3 +443,7 @@ Summing these positional values: 8 + 0 + 2 + 1 = 11.
 - In the specification and Dafny, an empty string is a
   =validBitString= but a =normalizedBitString= is a =validBitString=
   with no leading zeros and no empty.
+
+- It is not clear why we need =CompareUnequal= since it is just a
+  special case of =compare= that can handle strings with different
+  length.
